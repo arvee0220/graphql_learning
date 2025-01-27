@@ -68,7 +68,8 @@ const resolvers = {
         },
         async updateGame(_, { id, edits }) {
             // Ensure at least one field is provided in the edits object
-            if (!edits || (edits.title === null && !edits.platform)) {
+            if (!edits ||
+                (edits.title === null && (!edits.platform || edits.platform.length === 0))) {
                 throw new Error("At least one field (title or platform) must be provided.");
             }
             // Dynamically build the fields to update based on what was provided
@@ -77,11 +78,19 @@ const resolvers = {
                 updateFields.title = edits.title;
             if (edits.platform !== undefined)
                 updateFields.platform = edits.platform;
+            const currentGame = await client.query(`SELECT title FROM games WHERE id = $1`, [id]);
             try {
-                // Perform the update using a database query
-                const updatedGame = await client.query(`UPDATE games SET title = $1, platform = $2 WHERE id = $3 RETURNING *`, [
-                    updateFields.title || null,
-                    updateFields.platform || null, // No need to stringify, just pass the array as is
+                const updateQuery = `
+				UPDATE games 
+				SET 
+				  title = COALESCE($1, (SELECT title FROM games WHERE id = $3)),
+				  platform = $2
+				WHERE id = $3 
+				RETURNING *;
+			  `;
+                const updatedGame = await client.query(updateQuery, [
+                    updateFields.title || currentGame.rows[0].title,
+                    updateFields.platform ? `{${updateFields.platform.join(",")}}` : null,
                     id,
                 ]);
                 return updatedGame.rows[0];

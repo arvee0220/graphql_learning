@@ -5,7 +5,7 @@ import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import resolvers from "./resolvers.js";
-// server setup
+// PORT
 const PORT = 4000;
 // express
 const app = express();
