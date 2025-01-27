@@ -11,7 +11,7 @@ interface MyContext {
 	token?: string;
 }
 
-// server setup
+// PORT
 const PORT = 4000;
 
 // express
