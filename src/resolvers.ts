@@ -8,9 +8,13 @@ interface AddGameArgs {
 	game: { title: string; platform: string[] };
 }
 
+interface AddAuthorArgs {
+	author: { name: string; verified: boolean };
+}
+
 interface UpdateGameArgs {
 	id: string;
-	edits: { title: string; platform: string[] };
+	edits: EditGameInput;
 }
 
 interface EditGameInput {
@@ -123,6 +127,19 @@ const resolvers = {
 			};
 		},
 
+		async deleteAuthor(_: unknown, args: Args) {
+			await client.query(`DELETE FROM authors WHERE author_id = $1`, [args.id]);
+
+			await client.query(`DELETE FROM authors WHERE id = $1`, [args.id]);
+
+			const tableQuery = await client.query(`SELECT * FROM authors;`);
+
+			return {
+				message: "Author deleted successfully",
+				result: tableQuery.rows,
+			};
+		},
+
 		async addGame(_: unknown, args: AddGameArgs) {
 			const res = await client.query(
 				"INSERT INTO games (title, platform) VALUES ($1, $2) RETURNING *",
@@ -132,7 +149,15 @@ const resolvers = {
 			return res.rows[0];
 		},
 
-		async updateGame(_: unknown, { id, edits }: { id: string; edits: EditGameInput }) {
+		async addAuthor(_: unknown, args: AddAuthorArgs) {
+			const query = `INSERT INTO author (name, verified) VALUES ($1, $2) RETURNING *`;
+
+			const res = await client.query(query, [args.author.name, args.author.verified]);
+
+			return res.rows[0];
+		},
+
+		async updateGame(_: unknown, { id, edits }: UpdateGameArgs) {
 			// Ensure at least one field is provided in the edits object
 			if (
 				!edits ||
