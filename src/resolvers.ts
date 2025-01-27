@@ -147,6 +147,10 @@ const resolvers = {
 			if (edits.platform !== undefined) updateFields.platform = edits.platform;
 
 			const currentGame = await client.query(`SELECT title FROM games WHERE id = $1`, [id]);
+			const currentGamePlatform = await client.query(
+				`SELECT platform FROM games WHERE id = $1`,
+				[id]
+			);
 
 			try {
 				const updateQuery = `
@@ -159,9 +163,11 @@ const resolvers = {
 			  `;
 
 				const updatedGame = await client.query(updateQuery, [
-					updateFields.title || currentGame.rows[0].title,
-					updateFields.platform ? `{${updateFields.platform.join(",")}}` : null,
-					id,
+					updateFields.title || currentGame.rows[0].title, // $1
+					updateFields.platform
+						? `{${updateFields.platform.join(",")}}`
+						: currentGamePlatform.rows[0].platform, // $2
+					id, // $3
 				]);
 
 				return updatedGame.rows[0];
